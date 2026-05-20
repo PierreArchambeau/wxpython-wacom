@@ -1,3 +1,5 @@
+import math
+
 import wx
 from wx import glcanvas
 from OpenGL import GL
@@ -50,7 +52,10 @@ class PressureCanvas(glcanvas.GLCanvas):
                 break
 
         if value is None:
-            return 1.0 if event.LeftIsDown() else 0.0
+            left_is_down = getattr(event, "LeftIsDown", None)
+            if callable(left_is_down):
+                return 1.0 if left_is_down() else 0.0
+            return 0.0
 
         try:
             pressure = float(value)
@@ -149,7 +154,7 @@ class PressureCanvas(glcanvas.GLCanvas):
         GL.glVertex2f(cx, cy)
         for i in range(segments + 1):
             angle = (i / segments) * 6.28318530718
-            GL.glVertex2f(cx + radius * wx.Cos(angle), cy + radius * wx.Sin(angle))
+            GL.glVertex2f(cx + radius * math.cos(angle), cy + radius * math.sin(angle))
         GL.glEnd()
 
     def on_paint(self, _event):
