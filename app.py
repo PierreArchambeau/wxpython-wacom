@@ -12,6 +12,8 @@ class PressureCanvas(glcanvas.GLCanvas):
         self._initialized = False
         self._pressure = 0.0
         self._position = wx.Point(0, 0)
+        self._history_max_samples = 240
+        self._pressure_history = [0.0] * self._history_max_samples
         self._on_pressure_change = on_pressure_change
 
         self.Bind(wx.EVT_PAINT, self.on_paint)
@@ -80,6 +82,9 @@ class PressureCanvas(glcanvas.GLCanvas):
     def _update_input(self, event):
         self._position = event.GetPosition()
         self._pressure = self._extract_pressure(event)
+        self._pressure_history.append(self._pressure)
+        if len(self._pressure_history) > self._history_max_samples:
+            self._pressure_history = self._pressure_history[-self._history_max_samples :]
         self._on_pressure_change(self._position, self._pressure)
         self.Refresh(False)
 
@@ -157,6 +162,45 @@ class PressureCanvas(glcanvas.GLCanvas):
             GL.glVertex2f(cx + radius * math.cos(angle), cy + radius * math.sin(angle))
         GL.glEnd()
 
+    def _draw_pressure_graph(self, width, height):
+        graph_x = 24
+        graph_y = 24
+        graph_w = int(width * 0.62)
+        graph_h = int(height * 0.32)
+        if graph_w <= 20 or graph_h <= 20:
+            return
+
+        GL.glColor3f(0.15, 0.15, 0.19)
+        GL.glBegin(GL.GL_QUADS)
+        GL.glVertex2f(graph_x, graph_y)
+        GL.glVertex2f(graph_x + graph_w, graph_y)
+        GL.glVertex2f(graph_x + graph_w, graph_y + graph_h)
+        GL.glVertex2f(graph_x, graph_y + graph_h)
+        GL.glEnd()
+
+        GL.glColor3f(0.35, 0.35, 0.4)
+        GL.glBegin(GL.GL_LINE_LOOP)
+        GL.glVertex2f(graph_x, graph_y)
+        GL.glVertex2f(graph_x + graph_w, graph_y)
+        GL.glVertex2f(graph_x + graph_w, graph_y + graph_h)
+        GL.glVertex2f(graph_x, graph_y + graph_h)
+        GL.glEnd()
+
+        sample_count = len(self._pressure_history)
+        if sample_count < 2:
+            return
+
+        GL.glColor3f(0.1, 0.95, 0.75)
+        GL.glLineWidth(2.0)
+        GL.glBegin(GL.GL_LINE_STRIP)
+        x_step = graph_w / max(sample_count - 1, 1)
+        for i, pressure in enumerate(self._pressure_history):
+            x = graph_x + (i * x_step)
+            y = graph_y + (pressure * graph_h)
+            GL.glVertex2f(x, y)
+        GL.glEnd()
+        GL.glLineWidth(1.0)
+
     def on_paint(self, _event):
         if not self._initialized:
             self._init_gl()
@@ -165,6 +209,7 @@ class PressureCanvas(glcanvas.GLCanvas):
         width, height = self._setup_projection()
 
         GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
+        self._draw_pressure_graph(width, height)
         self._draw_pressure_bar(width, height)
         self._draw_pressure_circle(width, height)
 

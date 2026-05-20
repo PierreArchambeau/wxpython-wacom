@@ -23,6 +23,7 @@ python app.py
 - Déplacez le stylet sur la zone OpenGL.
 - Appuyez plus ou moins fort.
 - La barre à droite et le disque central réagissent à la pression.
+- Le graphe temporel (bas gauche) trace l’évolution de la pression dans le temps.
 - La pression normalisée et la position sont affichées en bas et dans la barre de statut.
 
 > Note: selon le pilote et l'API d'entrée exposée, la pression peut être transmise par des événements tablette dédiés ou via fallback souris.
